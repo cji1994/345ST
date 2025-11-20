@@ -1,452 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CTF 345 Shift Activity Tracker</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shift Activity Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Dependencies -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Force Dark Mode -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
-
+<style>
+  body { background-color: #0f0f11; color: #e6e6e6; }
+  .card { background-color: #1a1c1f; }
+  .card-hover:hover { background-color: #24272b; }
+  .input-dark { background-color: #2a2d31; border: 1px solid #3a3d42; color: #e6e6e6; }
+  .modal-bg { background: rgba(0,0,0,0.7); }
+</style>
 </head>
 
-<body class="dark bg-gray-900 text-gray-200">
-<div id="root"></div>
+<body class="h-screen w-screen overflow-hidden">
+<div class="flex h-full">
 
-<script type="text/babel">
+  <!-- LEFT SIDEBAR -->
+  <div class="w-1/3 border-r border-gray-800 p-4 overflow-y-auto">
+    <h1 class="text-2xl font-bold mb-4">Entries</h1>
 
-const { useState, useEffect } = React;
+    <!-- FILTERS (Option A) -->
+    <div class="mb-4 space-y-2">
+      <select id="filterType" class="w-full p-2 rounded input-dark">
+        <option value="All">Filter by Type: All</option>
+        <option value="Fault">Fault</option>
+        <option value="Maintenance">Maintenance</option>
+        <option value="Misc">Misc</option>
+      </select>
 
-/* --- Icons --- */
-const Icon = ({ d, className }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d}/>
-    </svg>
-);
+      <select id="filterWatch" class="w-full p-2 rounded input-dark">
+        <option value="All">Filter by Watch: All</option>
+        <option value="A">Watch A</option>
+        <option value="B">Watch B</option>
+        <option value="C">Watch C</option>
+        <option value="D">Watch D</option>
+        <option value="E">Watch E</option>
+      </select>
+    </div>
 
-const Plus      = (p) => <Icon {...p} d="M12 4v16m8-8H4" />;
-const Clock     = (p) => <Icon {...p} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />;
-const User      = (p) => <Icon {...p} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />;
-const Check     = (p) => <Icon {...p} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />;
-const Cross     = (p) => <Icon {...p} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />;
+    <div id="entryList" class="space-y-2"></div>
+  </div>
 
+  <!-- RIGHT PANEL -->
+  <div class="w-2/3 p-6 overflow-y-auto" id="rightPanel">
+    <!-- This is dynamically swapped between Add Form and Viewing Panel -->
+  </div>
 
-/* --------------------------------------------------------------------- */
-/* MAIN APP COMPONENT                                                     */
-/* --------------------------------------------------------------------- */
-function TaskTracker() {
+</div>
 
-    const [tasks, setTasks] = useState([]);
-    const [loading, setLoading] = useState(true);
+<!-- EDIT MODAL -->
+<div id="editModal" class="fixed inset-0 hidden modal-bg flex items-center justify-center">
+  <div class="card p-6 rounded-lg w-1/3">
+    <h2 class="text-xl font-bold mb-4">Edit Entry</h2>
 
-    /* Filters */
-    const [typeFilter, setTypeFilter] = useState("all");
-    const [watchFilter, setWatchFilter] = useState("all");
+    <div class="space-y-3">
+      <select id="editType" class="w-full p-2 rounded input-dark">
+        <option value="Fault">Fault</option>
+        <option value="Maintenance">Maintenance</option>
+        <option value="Misc">Misc</option>
+      </select>
 
-    /* Drawer */
-    const [selectedTask, setSelectedTask] = useState(null);
+      <select id="editWatch" class="w-full p-2 rounded input-dark">
+        <option value="A">Watch A</option>
+        <option value="B">Watch B</option>
+        <option value="C">Watch C</option>
+        <option value="D">Watch D</option>
+        <option value="E">Watch E</option>
+      </select>
 
-    /* Edit Modal */
-    const [editTask, setEditTask] = useState(null);
+      <input id="editName" class="w-full p-2 rounded input-dark" placeholder="Task Name" />
+      <input id="editHolder" class="w-full p-2 rounded input-dark" placeholder="Task Owner" />
+      <input id="editDate" type="date" class="w-full p-2 rounded input-dark" />
+      <input id="editTime" type="time" class="w-full p-2 rounded input-dark" />
+      <textarea id="editComments" class="w-full p-2 rounded input-dark h-28"></textarea>
+    </div>
 
-    /* Form State */
-    const [formData, setFormData] = useState({
-        type: "Faults",
-        watch: "A",
-        taskName: "",
-        taskOwner: "",
-        status: "Ongoing",
-        dateTime: "",
-        comments: ""
-    });
+    <div class="flex justify-end space-x-3 mt-4">
+      <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-600 rounded">Cancel</button>
+      <button onclick="saveEdit()" class="px-4 py-2 bg-blue-600 rounded">Save</button>
+    </div>
+  </div>
+</div>
 
-    /* Load tasks */
-    useEffect(() => {
-        const now = new Date();
-        const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-            .toISOString()
-            .slice(0, 16);
+<script>
+/* -----------------------------
+    STORAGE & GLOBALS
+------------------------------*/
+let entries = JSON.parse(localStorage.getItem("entries") || "[]");
+let selectedEntry = null;
+let editingIndex = null;
 
-        setFormData((p) => ({ ...p, dateTime: localDate }));
+/* -----------------------------
+    RENDER LEFT SIDEBAR LIST
+------------------------------*/
+function renderList() {
+  const typeFilter = document.getElementById("filterType").value;
+  const watchFilter = document.getElementById("filterWatch").value;
 
-        try {
-            const saved = localStorage.getItem("ctf345-tasks");
-            if (saved) setTasks(JSON.parse(saved));
-        } catch {}
-        setLoading(false);
-    }, []);
+  const list = document.getElementById("entryList");
+  list.innerHTML = "";
 
-    const saveTasks = (list) => {
-        localStorage.setItem("ctf345-tasks", JSON.stringify(list));
-    };
+  entries.forEach((entry, index) => {
+    if ((typeFilter === "All" || entry.type === typeFilter) &&
+        (watchFilter === "All" || entry.watch === watchFilter)) {
 
-    const getNextRef = () => {
-        if (tasks.length === 0) return "001";
-        const max = Math.max(...tasks.map((t) => parseInt(t.refNumber)));
-        return String(max + 1).padStart(3, "0");
-    };
-
-    /* Submit */
-    const handleSubmit = () => {
-        if (!formData.taskName || !formData.taskOwner || !formData.comments) {
-            alert("Please fill all required fields");
-            return;
-        }
-
-        const newTask = {
-            ...formData,
-            id: Date.now(),
-            refNumber: getNextRef()
-        };
-
-        const updated = [newTask, ...tasks];
-        setTasks(updated);
-        saveTasks(updated);
-
-        /* Auto-filter to show newly created entry */
-        setTypeFilter(formData.type);
-        setWatchFilter(formData.watch);
-        setSelectedTask(newTask);
-
-        /* Reset form */
-        const now = new Date();
-        const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-            .toISOString()
-            .slice(0, 16);
-
-        setFormData({
-            type: "Faults",
-            watch: "A",
-            taskName: "",
-            taskOwner: "",
-            status: "Ongoing",
-            dateTime: local,
-            comments: ""
-        });
-    };
-
-    /* Filtered List */
-    const filteredTasks = tasks.filter((t) => {
-        const typeMatch = typeFilter === "all" || t.type === typeFilter;
-        const watchMatch = watchFilter === "all" || t.watch === watchFilter;
-        return typeMatch && watchMatch;
-    });
-      /* Delete */
-    const deleteTask = (id) => {
-        if (!confirm("Delete this entry?")) return;
-        const updated = tasks.filter((t) => t.id !== id);
-        setTasks(updated);
-        saveTasks(updated);
-        setSelectedTask(null);
-    };
-
-    /* Save edited task */
-    const saveEdit = () => {
-        const updated = tasks.map((t) =>
-            t.id === editTask.id ? editTask : t
-        );
-        setTasks(updated);
-        saveTasks(updated);
-        setEditTask(null);
-        setSelectedTask(editTask);
-    };
-
-
-    /* ------------------------------------------------------------------ */
-    /* UI STARTS HERE                                                     */
-    /* ------------------------------------------------------------------ */
-
-    return (
-        <div className="flex h-screen">
-
-            {/* LEFT PANEL */}
-            <div className="w-1/3 border-r border-gray-700 p-4 overflow-y-auto">
-
-                {/* CREATE NEW ENTRY FORM */}
-                <h2 className="text-xl font-bold mb-3">Create New Entry</h2>
-
-                <div className="space-y-3">
-                    
-                    {/* Type */}
-                    <select
-                        className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                        value={formData.type}
-                        onChange={(e)=>setFormData({...formData,type:e.target.value})}
-                    >
-                        <option>Faults</option>
-                        <option>Maintenance</option>
-                        <option>Events</option>
-                        <option>Training</option>
-                    </select>
-
-                    {/* Watch */}
-                    <select
-                        className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                        value={formData.watch}
-                        onChange={(e)=>setFormData({...formData,watch:e.target.value})}
-                    >
-                        <option value="A">Watch A</option>
-                        <option value="B">Watch B</option>
-                        <option value="C">Watch C</option>
-                        <option value="D">Watch D</option>
-                    </select>
-
-                    <input
-                        className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                        placeholder="Task Name"
-                        value={formData.taskName}
-                        onChange={(e)=>setFormData({...formData,taskName:e.target.value})}
-                    />
-
-                    <input
-                        className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                        placeholder="Task Owner"
-                        value={formData.taskOwner}
-                        onChange={(e)=>setFormData({...formData,taskOwner:e.target.value})}
-                    />
-
-                    {/* Status */}
-                    <select
-                        className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                        value={formData.status}
-                        onChange={(e)=>setFormData({...formData,status:e.target.value})}
-                    >
-                        <option>Ongoing</option>
-                        <option>Completed</option>
-                        <option>Cancelled</option>
-                    </select>
-
-                    {/* Date/time */}
-                    <input
-                        type="datetime-local"
-                        className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                        value={formData.dateTime}
-                        onChange={(e)=>setFormData({...formData,dateTime:e.target.value})}
-                    />
-
-                    {/* Comments */}
-                    <textarea
-                        className="w-full p-2 bg-gray-800 border border-gray-700 rounded h-24"
-                        placeholder="Comments / Details"
-                        value={formData.comments}
-                        onChange={(e)=>setFormData({...formData,comments:e.target.value})}
-                    />
-
-                    <button
-                        className="w-full bg-blue-700 hover:bg-blue-600 p-2 rounded font-semibold"
-                        onClick={handleSubmit}
-                    >
-                        Add Entry
-                    </button>
-                </div>
-
-                {/* FILTERS */}
-                <h2 className="text-xl font-bold mt-8 mb-3">Filters</h2>
-
-                <select
-                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded mb-3"
-                    value={typeFilter}
-                    onChange={(e)=>setTypeFilter(e.target.value)}
-                >
-                    <option value="all">All Types</option>
-                    <option value="Faults">Faults</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Events">Events</option>
-                    <option value="Training">Training</option>
-                </select>
-
-                <select
-                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                    value={watchFilter}
-                    onChange={(e)=>setWatchFilter(e.target.value)}
-                >
-                    <option value="all">All Watches</option>
-                    <option value="A">Watch A</option>
-                    <option value="B">Watch B</option>
-                    <option value="C">Watch C</option>
-                    <option value="D">Watch D</option>
-                </select>
-
-
-                {/* TASK LIST */}
-                <h2 className="text-xl font-bold mt-8 mb-2">Entries</h2>
-
-                <div className="space-y-2">
-                    {filteredTasks.map((task) => (
-                        <div
-                            key={task.id}
-                            className={`p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:bg-gray-700 ${
-                                selectedTask?.id === task.id ? "ring-2 ring-blue-500" : ""
-                            }`}
-                            onClick={() => setSelectedTask(task)}
-                        >
-                            <div className="font-semibold">
-                                #{task.refNumber} — {task.taskName}
-                            </div>
-                            <div className="text-sm text-gray-400">
-                                {task.type} • Watch {task.watch}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-
-            {/* RIGHT PANEL — ENTRY VIEW */}
-            <div className="flex-1 p-6 overflow-y-auto">
-                {!selectedTask ? (
-                    <div className="text-gray-500">Select an entry to view it</div>
-                ) : (
-                    <div className="bg-gray-800 border border-gray-700 rounded p-6 space-y-4">
-
-                        <div className="flex justify-between">
-                            <h2 className="text-2xl font-bold">
-                                #{selectedTask.refNumber} — {selectedTask.taskName}
-                            </h2>
-
-                            <div className="flex gap-3">
-                                <button
-                                    className="px-3 py-1 bg-yellow-600 hover:bg-yellow-500 rounded"
-                                    onClick={() => setEditTask(selectedTask)}
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded"
-                                    onClick={() => deleteTask(selectedTask.id)}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-
-                        <div><strong>Type:</strong> {selectedTask.type}</div>
-                        <div><strong>Watch:</strong> Watch {selectedTask.watch}</div>
-                        <div><strong>Owner:</strong> {selectedTask.taskOwner}</div>
-                        <div><strong>Status:</strong> {selectedTask.status}</div>
-                        <div><strong>Date/Time:</strong> {selectedTask.dateTime}</div>
-
-                        <div>
-                            <strong>Comments:</strong>
-                            <p className="whitespace-pre-wrap mt-2">{selectedTask.comments}</p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-
-            {/* EDIT MODAL */}
-            {editTask && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-6">
-                    <div className="bg-gray-900 border border-gray-700 p-6 rounded w-full max-w-lg space-y-4">
-
-                        <h2 className="text-xl font-bold">Edit Entry</h2>
-
-                        {/* Type */}
-                        <select
-                            className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                            value={editTask.type}
-                            onChange={(e)=>setEditTask({...editTask,type:e.target.value})}
-                        >
-                            <option>Faults</option>
-                            <option>Maintenance</option>
-                            <option>Events</option>
-                            <option>Training</option>
-                        </select>
-
-                        {/* Watch */}
-                        <select
-                            className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                            value={editTask.watch}
-                            onChange={(e)=>setEditTask({...editTask,watch:e.target.value})}
-                        >
-                            <option>A</option>
-                            <option>B</option>
-                            <option>C</option>
-                            <option>D</option>
-                        </select>
-
-                        {/* Name */}
-                        <input
-                            className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                            value={editTask.taskName}
-                            onChange={(e)=>setEditTask({...editTask,taskName:e.target.value})}
-                        />
-
-                        {/* Owner */}
-                        <input
-                            className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                            value={editTask.taskOwner}
-                            onChange={(e)=>setEditTask({...editTask,taskOwner:e.target.value})}
-                        />
-
-                        {/* Status */}
-                        <select
-                            className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                            value={editTask.status}
-                            onChange={(e)=>setEditTask({...editTask,status:e.target.value})}
-                        >
-                            <option>Ongoing</option>
-                            <option>Completed</option>
-                            <option>Cancelled</option>
-                        </select>
-
-                        {/* Date/Time */}
-                        <input
-                            type="datetime-local"
-                            className="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-                            value={editTask.dateTime}
-                            onChange={(e)=>setEditTask({...editTask,dateTime:e.target.value})}
-                        />
-
-                        {/* Comments */}
-                        <textarea
-                            className="w-full p-2 bg-gray-800 border border-gray-700 rounded h-24"
-                            value={editTask.comments}
-                            onChange={(e)=>setEditTask({...editTask,comments:e.target.value})}
-                        />
-
-                        <div className="flex justify-end gap-3 pt-4">
-                            <button
-                                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded"
-                                onClick={()=>setEditTask(null)}
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded"
-                                onClick={saveEdit}
-                            >
-                                Save Changes
-                            </button>
-                        </div>
-
-                    </div>
-                </div>
-            )}
-
-        </div>
-    );
+      const div = document.createElement("div");
+      div.className = "card p-3 rounded cursor-pointer card-hover";
+      div.innerHTML = `
+        <div class="font-semibold">${entry.name}</div>
+        <div class="text-sm opacity-70">${entry.date} ${entry.time}</div>
+      `;
+      div.onclick = () => viewEntry(index);
+      list.appendChild(div);
+    }
+  });
 }
 
+/* -----------------------------
+    RIGHT PANEL: ADD FORM
+------------------------------*/
+function showAddForm() {
+  document.getElementById("rightPanel").innerHTML = `
+    <h1 class="text-xl font-bold mb-4">Add New Entry</h1>
+    <div class="space-y-3">
+      <select id="newType" class="w-full p-2 rounded input-dark">
+        <option value="Fault">Fault</option>
+        <option value="Maintenance">Maintenance</option>
+        <option value="Misc">Misc</option>
+      </select>
 
-/* RENDER APP */
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<TaskTracker />);
+      <select id="newWatch" class="w-full p-2 rounded input-dark">
+        <option value="A">Watch A</option>
+        <option value="B">Watch B</option>
+        <option value="C">Watch C</option>
+        <option value="D">Watch D</option>
+        <option value="E">Watch E</option>
+      </select>
 
+      <input id="newName" class="w-full p-2 rounded input-dark" placeholder="Task Name" />
+      <input id="newHolder" class="w-full p-2 rounded input-dark" placeholder="Task Owner" />
+      <input id="newDate" type="date" class="w-full p-2 rounded input-dark" />
+      <input id="newTime" type="time" class="w-full p-2 rounded input-dark" />
+      <textarea id="newComments" class="w-full p-2 rounded input-dark h-28"></textarea>
+
+      <button onclick="addEntry()" class="w-full bg-green-600 p-2 rounded">Add Entry</button>
+    </div>
+  `;
+}
+
+/* -----------------------------
+    ADD ENTRY
+------------------------------*/
+function addEntry() {
+  const entry = {
+    type: document.getElementById("newType").value,
+    watch: document.getElementById("newWatch").value,
+    name: document.getElementById("newName").value,
+    holder: document.getElementById("newHolder").value,
+    date: document.getElementById("newDate").value,
+    time: document.getElementById("newTime").value,
+    comments: document.getElementById("newComments").value
+  };
+
+  entries.push(entry);
+  localStorage.setItem("entries", JSON.stringify(entries));
+  renderList();
+  showAddForm();
+}
+
+/* -----------------------------
+    VIEW ENTRY (right panel)
+------------------------------*/
+function viewEntry(index) {
+  selectedEntry = entries[index];
+
+  document.getElementById("rightPanel").innerHTML = `
+    <h1 class="text-2xl font-bold mb-4">${selectedEntry.name}</h1>
+
+    <div class="space-y-2 text-lg">
+      <div><strong>Type:</strong> ${selectedEntry.type}</div>
+      <div><strong>Watch:</strong> ${selectedEntry.watch}</div>
+      <div><strong>Owner:</strong> ${selectedEntry.holder}</div>
+      <div><strong>Date:</strong> ${selectedEntry.date}</div>
+      <div><strong>Time:</strong> ${selectedEntry.time}</div>
+
+      <div class="mt-4"><strong>Comments:</strong><br/>${selectedEntry.comments}</div>
+    </div>
+
+    <div class="flex space-x-3 mt-6">
+      <button onclick="openEditModal(${index})" class="px-4 py-2 bg-blue-600 rounded">Edit</button>
+      <button onclick="deleteEntry(${index})" class="px-4 py-2 bg-red-600 rounded">Delete</button>
+      <button onclick="showAddForm()" class="px-4 py-2 bg-gray-700 rounded">Back</button>
+    </div>
+  `;
+}
+
+/* -----------------------------
+    DELETE ENTRY
+------------------------------*/
+function deleteEntry(index) {
+  if (!confirm("Delete this entry?")) return;
+
+  entries.splice(index, 1);
+  localStorage.setItem("entries", JSON.stringify(entries));
+
+  renderList();
+  showAddForm();
+}
+
+/* -----------------------------
+    EDIT MODAL
+------------------------------*/
+function openEditModal(index) {
+  editingIndex = index;
+  const e = entries[index];
+
+  document.getElementById("editType").value = e.type;
+  document.getElementById("editWatch").value = e.watch;
+  document.getElementById("editName").value = e.name;
+  document.getElementById("editHolder").value = e.holder;
+  document.getElementById("editDate").value = e.date;
+  document.getElementById("editTime").value = e.time;
+  document.getElementById("editComments").value = e.comments;
+
+  document.getElementById("editModal").classList.remove("hidden");
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").classList.add("hidden");
+}
+
+function saveEdit() {
+  const e = entries[editingIndex];
+
+  e.type = document.getElementById("editType").value;
+  e.watch = document.getElementById("editWatch").value;
+  e.name = document.getElementById("editName").value;
+  e.holder = document.getElementById("editHolder").value;
+  e.date = document.getElementById("editDate").value;
+  e.time = document.getElementById("editTime").value;
+  e.comments = document.getElementById("editComments").value;
+
+  localStorage.setItem("entries", JSON.stringify(entries));
+
+  closeEditModal();
+  renderList();
+  viewEntry(editingIndex);
+}
+
+/* INIT */
+showAddForm();
+renderList();
 </script>
+
 </body>
 </html>
-
-
