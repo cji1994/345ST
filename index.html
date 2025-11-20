@@ -19,61 +19,38 @@ export default function TaskTracker() {
     comments: ''
   });
 
+  // Load tasks and dark mode on mount
   useEffect(() => {
     const now = new Date();
     const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
       .toISOString()
       .slice(0, 16);
     setFormData(prev => ({ ...prev, dateTime: localDateTime }));
-    loadTasks();
-    loadDarkMode();
+
+    // Load tasks
+    const savedTasks = localStorage.getItem('ctf345-tasks');
+    if (savedTasks) setTasks(JSON.parse(savedTasks));
+
+    // Load dark mode
+    const savedDarkMode = localStorage.getItem('ctf345-darkmode');
+    if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+
+    setLoading(false);
   }, []);
 
-  const loadTasks = async () => {
-    try {
-      const result = await window.storage.get('ctf345-tasks');
-      if (result && result.value) {
-        setTasks(JSON.parse(result.value));
-      }
-    } catch (error) {
-      console.log('No existing tasks found');
-    } finally {
-      setLoading(false);
-    }
+  // Save tasks
+  const saveTasks = (newTasks) => {
+    setTasks(newTasks);
+    localStorage.setItem('ctf345-tasks', JSON.stringify(newTasks));
   };
 
-  const loadDarkMode = async () => {
-    try {
-      const result = await window.storage.get('ctf345-darkmode');
-      if (result && result.value) {
-        setDarkMode(JSON.parse(result.value));
-      }
-    } catch (error) {
-      console.log('No dark mode preference found');
-    }
+  // Save dark mode
+  const saveDarkMode = (mode) => {
+    setDarkMode(mode);
+    localStorage.setItem('ctf345-darkmode', JSON.stringify(mode));
   };
 
-  const saveTasks = async (newTasks) => {
-    try {
-      await window.storage.set('ctf345-tasks', JSON.stringify(newTasks));
-    } catch (error) {
-      console.error('Failed to save tasks:', error);
-    }
-  };
-
-  const saveDarkMode = async (mode) => {
-    try {
-      await window.storage.set('ctf345-darkmode', JSON.stringify(mode));
-    } catch (error) {
-      console.error('Failed to save dark mode preference:', error);
-    }
-  };
-
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    saveDarkMode(newMode);
-  };
+  const toggleDarkMode = () => saveDarkMode(!darkMode);
 
   const getNextRefNumber = () => {
     if (tasks.length === 0) return '001';
@@ -86,15 +63,16 @@ export default function TaskTracker() {
       alert('Please fill in all required fields');
       return;
     }
-    
+
     const newTask = {
       ...formData,
       refNumber: getNextRefNumber(),
       id: Date.now()
     };
+
     const updatedTasks = [newTask, ...tasks];
-    setTasks(updatedTasks);
     saveTasks(updatedTasks);
+
     setFormData({
       type: 'Faults',
       watch: 'A',
@@ -113,11 +91,8 @@ export default function TaskTracker() {
       alert('Please fill in all required fields');
       return;
     }
-    
-    const updatedTasks = tasks.map(task => 
-      task.id === selectedTask.id ? selectedTask : task
-    );
-    setTasks(updatedTasks);
+
+    const updatedTasks = tasks.map(task => task.id === selectedTask.id ? selectedTask : task);
     saveTasks(updatedTasks);
     setEditMode(false);
     alert('Task updated successfully!');
@@ -126,7 +101,6 @@ export default function TaskTracker() {
   const handleDelete = (taskId) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       const updatedTasks = tasks.filter(task => task.id !== taskId);
-      setTasks(updatedTasks);
       saveTasks(updatedTasks);
       setSelectedTask(null);
       setEditMode(false);
@@ -169,440 +143,15 @@ export default function TaskTracker() {
     <div className={`flex h-screen ${bgClass}`}>
       {/* Sidebar */}
       <div className={`w-80 ${cardBg} border-r ${borderColor} overflow-y-auto`}>
-        <div className={`p-4 border-b ${borderColor}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={`text-lg font-semibold ${textPrimary}`}>Logged Events</h2>
-            <button
-              onClick={toggleDarkMode}
-              className={`p-2 rounded-lg ${inputBg} transition-colors`}
-              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-          </div>
-          
-          <div className="mb-3">
-            <p className={`text-xs font-medium ${textSecondary} mb-2`}>Filter by Type</p>
-            <div className="flex gap-2 mb-2">
-              <button
-                onClick={() => setFilter('all')}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  filter === 'all' 
-                    ? 'bg-indigo-600 text-white' 
-                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilter('Faults')}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  filter === 'Faults' 
-                    ? 'bg-red-600 text-white' 
-                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Faults
-              </button>
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilter('Maintenance')}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  filter === 'Maintenance' 
-                    ? 'bg-blue-600 text-white' 
-                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Maintenance
-              </button>
-              <button
-                onClick={() => setFilter('Miscellaneous')}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  filter === 'Miscellaneous' 
-                    ? 'bg-gray-600 text-white' 
-                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Misc
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <p className={`text-xs font-medium ${textSecondary} mb-2`}>Filter by Watch</p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => setWatchFilter('all')}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  watchFilter === 'all' 
-                    ? 'bg-indigo-600 text-white' 
-                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All
-              </button>
-              {['A', 'B', 'C', 'D', 'E'].map(watch => (
-                <button
-                  key={watch}
-                  onClick={() => setWatchFilter(watch)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    watchFilter === watch 
-                      ? 'bg-indigo-600 text-white' 
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {watch}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4">
-          {loading ? (
-            <p className={`${textSecondary} text-sm text-center py-8`}>Loading...</p>
-          ) : filteredTasks.length === 0 ? (
-            <p className={`${textSecondary} text-sm text-center py-8`}>No events logged yet</p>
-          ) : (
-            <div className="space-y-3">
-              {filteredTasks.map(task => (
-                <div
-                  key={task.id}
-                  onClick={() => {
-                    setSelectedTask(task);
-                    setEditMode(false);
-                  }}
-                  className={`p-3 border ${borderColor} rounded-lg hover:shadow-md transition-shadow ${cardBg} cursor-pointer ${
-                    selectedTask?.id === task.id ? 'ring-2 ring-indigo-500' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-semibold text-indigo-500">
-                        #{task.refNumber}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full border ${getTypeColor(task.type)}`}>
-                        {task.type}
-                      </span>
-                    </div>
-                    {task.status === 'Completed' ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-orange-500" />
-                    )}
-                  </div>
-                  
-                  <h3 className={`font-medium ${textPrimary} text-sm mb-2`}>
-                    {task.taskName}
-                  </h3>
-                  
-                  <div className={`space-y-1 text-xs ${textSecondary}`}>
-                    <div className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      <span>Watch {task.watch} - {task.taskOwner}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      <span>{new Date(task.dateTime).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* ...sidebar content (filters, dark mode toggle, task list) */}
+        {/* Keep the JSX you already have here */}
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto p-8">
-          {selectedTask ? (
-            <div className={`${cardBg} rounded-xl shadow-sm border ${borderColor} p-8`}>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className={`text-2xl font-bold ${textPrimary}`}>
-                    Task #{selectedTask.refNumber}
-                  </h1>
-                  <span className={`inline-block mt-2 text-sm px-3 py-1 rounded-full border ${getTypeColor(selectedTask.type)}`}>
-                    {selectedTask.type}
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedTask(null);
-                    setEditMode(false);
-                  }}
-                  className={`p-2 rounded-lg ${hoverBg} transition-colors`}
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {editMode ? (
-                <div className="space-y-6">
-                  <div>
-                    <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Task Type</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {['Faults', 'Maintenance', 'Miscellaneous'].map(type => (
-                        <button
-                          key={type}
-                          onClick={() => setSelectedTask({ ...selectedTask, type })}
-                          className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                            selectedTask.type === type
-                              ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                              : darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-200 bg-white text-gray-700'
-                          }`}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Watch</label>
-                      <select
-                        value={selectedTask.watch}
-                        onChange={(e) => setSelectedTask({ ...selectedTask, watch: e.target.value })}
-                        className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                      >
-                        <option value="A">Watch A</option>
-                        <option value="B">Watch B</option>
-                        <option value="C">Watch C</option>
-                        <option value="D">Watch D</option>
-                        <option value="E">Watch E</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Status</label>
-                      <select
-                        value={selectedTask.status}
-                        onChange={(e) => setSelectedTask({ ...selectedTask, status: e.target.value })}
-                        className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                      >
-                        <option value="Ongoing">Ongoing</option>
-                        <option value="Completed">Completed</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Task Name</label>
-                    <input
-                      type="text"
-                      value={selectedTask.taskName}
-                      onChange={(e) => setSelectedTask({ ...selectedTask, taskName: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Task Owner</label>
-                    <input
-                      type="text"
-                      value={selectedTask.taskOwner}
-                      onChange={(e) => setSelectedTask({ ...selectedTask, taskOwner: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Date & Time</label>
-                    <input
-                      type="datetime-local"
-                      value={selectedTask.dateTime}
-                      onChange={(e) => setSelectedTask({ ...selectedTask, dateTime: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Comments</label>
-                    <textarea
-                      value={selectedTask.comments}
-                      onChange={(e) => setSelectedTask({ ...selectedTask, comments: e.target.value })}
-                      rows="4"
-                      className={`w-full px-4 py-2 border rounded-lg ${inputBg} resize-none`}
-                    />
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleUpdate}
-                      className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Save className="w-5 h-5" />
-                      Save Changes
-                    </button>
-                    <button
-                      onClick={() => setEditMode(false)}
-                      className={`flex-1 ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} ${textPrimary} py-3 rounded-lg font-medium transition-colors`}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Task Name</label>
-                    <p className={`text-lg ${textPrimary}`}>{selectedTask.taskName}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Watch</label>
-                      <p className={`${textPrimary}`}>Watch {selectedTask.watch}</p>
-                    </div>
-                    <div>
-                      <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Status</label>
-                      <p className={`${textPrimary}`}>{selectedTask.status}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Task Owner</label>
-                    <p className={`${textPrimary}`}>{selectedTask.taskOwner}</p>
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Date & Time</label>
-                    <p className={`${textPrimary}`}>{new Date(selectedTask.dateTime).toLocaleString()}</p>
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Comments</label>
-                    <p className={`${textPrimary} whitespace-pre-wrap`}>{selectedTask.comments}</p>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      onClick={() => setEditMode(true)}
-                      className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Edit className="w-5 h-5" />
-                      Edit Task
-                    </button>
-                    <button
-                      onClick={() => handleDelete(selectedTask.id)}
-                      className="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                      Delete Task
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className={`${cardBg} rounded-xl shadow-sm border ${borderColor} p-8`}>
-              <h1 className={`text-3xl font-bold ${textPrimary} mb-2`}>CTF 345 Shift Activity Tracker</h1>
-              <p className={`${textSecondary} mb-8`}>Log faults, maintenance, and miscellaneous tasks</p>
-
-              <div className="space-y-6">
-                <div>
-                  <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Task Type *</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {['Faults', 'Maintenance', 'Miscellaneous'].map(type => (
-                      <button
-                        key={type}
-                        onClick={() => setFormData({ ...formData, type })}
-                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                          formData.type === type
-                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                            : darkMode ? 'border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Watch *</label>
-                    <select
-                      value={formData.watch}
-                      onChange={(e) => setFormData({ ...formData, watch: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                    >
-                      <option value="A">Watch A</option>
-                      <option value="B">Watch B</option>
-                      <option value="C">Watch C</option>
-                      <option value="D">Watch D</option>
-                      <option value="E">Watch E</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Status *</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                    >
-                      <option value="Ongoing">Ongoing</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Task Name *</label>
-                  <input
-                    type="text"
-                    value={formData.taskName}
-                    onChange={(e) => setFormData({ ...formData, taskName: e.target.value })}
-                    className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                    placeholder="Enter a brief task description"
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Task Owner *</label>
-                  <input
-                    type="text"
-                    value={formData.taskOwner}
-                    onChange={(e) => setFormData({ ...formData, taskOwner: e.target.value })}
-                    className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                    placeholder="Name of person logging this task"
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Date & Time *</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.dateTime}
-                    onChange={(e) => setFormData({ ...formData, dateTime: e.target.value })}
-                    className={`w-full px-4 py-2 border rounded-lg ${inputBg}`}
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Comments *</label>
-                  <textarea
-                    value={formData.comments}
-                    onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                    rows="4"
-                    className={`w-full px-4 py-2 border rounded-lg ${inputBg} resize-none`}
-                    placeholder="Provide detailed information about the task..."
-                  />
-                </div>
-
-                <button
-                  onClick={handleSubmit}
-                  className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Log Task
-                </button>
-              </div>
-            </div>
-          )}
+          {/* ...main content (task details, edit form, new task form) */}
+          {/* Keep your existing JSX here */}
         </div>
       </div>
     </div>
