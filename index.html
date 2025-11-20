@@ -1,435 +1,341 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CTF 345 Shift Activity Tracker</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CTF 345 Shift Activity Tracker — Dark</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<div id="root"></div>
+<body class="bg-gray-900 text-gray-100">
+  <div id="root" class="min-h-screen"></div>
 
-<script type="text/babel">
-const { useState, useEffect } = React;
+  <script type="text/babel">
+  const { useState, useEffect } = React;
 
-// Icons
-const Plus = ({ className }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-    </svg>
-);
-const Clock = ({ className }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-);
-const User = ({ className }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-);
-const CheckCircle = ({ className }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-);
-const XCircle = ({ className }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-);
+  const Icon = ({ children, className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">{children}</svg>
+  );
 
-function TaskTracker() {
+  const Plus = (props) => (
+    <Icon {...props}><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M12 4v16M4 12h16" /></Icon>
+  );
+  const Clock = (props) => (
+    <Icon {...props}><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3"/><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M21 12A9 9 0 113 12a9 9 0 0118 0z"/></Icon>
+  );
+  const User = (props) => (
+    <Icon {...props}><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M4 21a8 8 0 0116 0"/></Icon>
+  );
+  const CheckCircle = (props) => (
+    <Icon {...props}><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4"/><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M21 12A9 9 0 113 12a9 9 0 0118 0z"/></Icon>
+  );
+  const XCircle = (props) => (
+    <Icon {...props}><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M10 14l4-4M14 14l-4-4"/><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M21 12A9 9 0 113 12a9 9 0 0118 0z"/></Icon>
+  );
+  const Edit = (props) => (
+    <Icon {...props}><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M11 4H4v16h16v-7"/><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M18.5 2.5l3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>
+  );
+  const Trash = (props) => (
+    <Icon {...props}><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M3 6h18"/><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M8 6v14h8V6"/><path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M10 11v6M14 11v6"/></Icon>
+  );
+
+  function Modal({ children, open, onClose }){
+    if(!open) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+        <div className="relative z-10 w-full max-w-2xl mx-4 bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  function Drawer({ children, open, onClose }){
+    return (
+      <div className={`fixed top-0 right-0 h-full z-40 transform ${open ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300`}>
+        <div className="h-full w-[520px] bg-gray-800 border-l border-gray-700 shadow-xl flex flex-col">
+          <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Entry</h3>
+            <button onClick={onClose} className="text-gray-300 hover:text-white">Close</button>
+          </div>
+          <div className="p-4 overflow-auto">{children}</div>
+        </div>
+      </div>
+    );
+  }
+
+  function TaskTracker(){
     const [tasks, setTasks] = useState([]);
-    const [filter, setFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState('all');
     const [watchFilter, setWatchFilter] = useState('all');
     const [loading, setLoading] = useState(true);
-    const [formData, setFormData] = useState({
-        type: 'Faults',
-        watch: 'A',
-        taskName: '',
-        taskOwner: '',
-        status: 'Ongoing',
-        dateTime: '',
-        comments: ''
-    });
-    const [selectedTask, setSelectedTask] = useState(null);
-    const [editMode, setEditMode] = useState(false);
+    const [formData, setFormData] = useState({ type: 'Faults', watch: 'A', taskName: '', taskOwner: '', status: 'Ongoing', dateTime: '', comments: '' });
+    const [selected, setSelected] = useState(null);
+    const [editOpen, setEditOpen] = useState(false);
+    const [editForm, setEditForm] = useState(null);
 
-    useEffect(() => {
-        const now = new Date();
-        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-            .toISOString()
-            .slice(0, 16);
-        setFormData(prev => ({ ...prev, dateTime: localDateTime }));
-        loadTasks();
+    useEffect(()=>{
+      const now = new Date();
+      const localDateTime = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+      setFormData(prev=>({...prev, dateTime: localDateTime}));
+      loadTasks();
     }, []);
 
-    const loadTasks = () => {
-        try {
-            const saved = localStorage.getItem('ctf345-tasks');
-            if (saved) {
-                setTasks(JSON.parse(saved));
-            }
-        } catch (error) {
-            console.log('No existing tasks found');
-        } finally {
-            setLoading(false);
-        }
+    const loadTasks = ()=>{
+      try{ const raw = localStorage.getItem('ctf345-tasks'); if(raw) setTasks(JSON.parse(raw)); }catch(e){ console.log('no tasks'); }
+      setLoading(false);
     };
 
-    const saveTasks = (newTasks) => {
-        try {
-            localStorage.setItem('ctf345-tasks', JSON.stringify(newTasks));
-        } catch (error) {
-            console.error('Failed to save tasks:', error);
-        }
+    const persist = (arr)=>{ setTasks(arr); localStorage.setItem('ctf345-tasks', JSON.stringify(arr)); };
+
+    const getNextRef = ()=>{
+      if(tasks.length===0) return '001';
+      const maxRef = Math.max(...tasks.map(t=>parseInt(t.refNumber||'0')));
+      return String(maxRef+1).padStart(3,'0');
     };
 
-    const getNextRefNumber = () => {
-        if (tasks.length === 0) return '001';
-        const maxRef = Math.max(...tasks.map(t => parseInt(t.refNumber)));
-        return String(maxRef + 1).padStart(3, '0');
+    const handleCreate = ()=>{
+      if(!formData.taskName || !formData.taskOwner || !formData.dateTime || !formData.comments){ alert('Please fill required fields'); return; }
+      const newTask = {...formData, id: Date.now(), refNumber: getNextRef()};
+      persist([newTask, ...tasks]);
+      // reset form
+      const now = new Date();
+      const localDateTime = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+      setFormData({ type:'Faults', watch:'A', taskName:'', taskOwner:'', status:'Ongoing', dateTime: localDateTime, comments:'' });
+      // switch filters to show newly created
+      setTypeFilter(newTask.type);
+      setWatchFilter(newTask.watch);
+      setSelected(newTask);
     };
 
-    const handleSubmit = () => {
-        if (!formData.taskName || !formData.taskOwner || !formData.dateTime || !formData.comments) {
-            alert('Please fill in all required fields');
-            return;
-        }
+    const openEditModal = (task)=>{ setEditForm({...task}); setEditOpen(true); };
 
-        const newTask = {
-            ...formData,
-            refNumber: getNextRefNumber(),
-            id: Date.now()
-        };
-        const updatedTasks = [newTask, ...tasks];
-        setTasks(updatedTasks);
-        saveTasks(updatedTasks);
-        setFormData({
-            type: 'Faults',
-            watch: 'A',
-            taskName: '',
-            taskOwner: '',
-            status: 'Ongoing',
-            dateTime: new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-                .toISOString()
-                .slice(0, 16),
-            comments: ''
-        });
+    const handleUpdate = (updated)=>{
+      const updatedTasks = tasks.map(t => t.id===updated.id ? updated : t);
+      persist(updatedTasks);
+      setSelected(updated);
+      setEditOpen(false);
     };
 
-    const handleUpdate = () => {
-        if (!selectedTask.taskName || !selectedTask.taskOwner || !selectedTask.dateTime || !selectedTask.comments) {
-            alert('Please fill in all required fields');
-            return;
-        }
-
-        const updatedTasks = tasks.map(task =>
-            task.id === selectedTask.id ? selectedTask : task
-        );
-        setTasks(updatedTasks);
-        saveTasks(updatedTasks);
-        setEditMode(false);
-        setSelectedTask(null);
+    const handleDelete = (id)=>{
+      if(!confirm('Delete this task?')) return;
+      const remaining = tasks.filter(t=>t.id!==id);
+      persist(remaining);
+      setSelected(null);
+      setEditOpen(false);
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this task?')) {
-            const updatedTasks = tasks.filter(task => task.id !== id);
-            setTasks(updatedTasks);
-            saveTasks(updatedTasks);
-            setSelectedTask(null);
-            setEditMode(false);
-        }
-    };
-
-    const filteredTasks = tasks.filter(task => {
-        const typeMatch = filter === 'all' ? true : task.type === filter;
-        const watchMatch = watchFilter === 'all' ? true : task.watch === watchFilter;
-        return typeMatch && watchMatch;
+    const filtered = tasks.filter(t=>{
+      const a = (typeFilter==='all') || t.type===typeFilter;
+      const b = (watchFilter==='all') || t.watch===watchFilter;
+      return a && b;
     });
 
-    const getTypeColor = (type) => {
-        switch(type) {
-            case 'Faults': return 'bg-red-100 text-red-800 border-red-300';
-            case 'Maintenance': return 'bg-blue-100 text-blue-800 border-blue-300';
-            case 'Miscellaneous': return 'bg-gray-100 text-gray-800 border-gray-300';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
+    const typeOptions = ['all','Faults','Maintenance','Miscellaneous'];
+    const watchOptions = ['all','A','B','C','D','E'];
 
     return (
-        <div className="flex h-screen bg-gray-50">
-            {/* Sidebar */}
-            <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
-                <div className="p-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Logged Events</h2>
+      <div className="flex h-screen">
+        <aside className="w-80 bg-gray-800 border-r border-gray-700 p-4 flex flex-col">
+          <h2 className="text-xl font-semibold mb-4">Logged Events</h2>
 
-                    {/* Type Filter */}
-                    <div className="flex gap-2 mb-2">
-                        {['all','Faults','Maintenance','Miscellaneous'].map(type => (
-                            <button
-                                key={type}
-                                onClick={() => setFilter(type)}
-                                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                    filter === type
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                                {type === 'all' ? 'All' : type === 'Miscellaneous' ? 'Misc' : type}
-                            </button>
-                        ))}
+          <div className="mb-4">
+            <label className="block text-sm text-gray-300 mb-2">Filter by Type</label>
+            <select value={typeFilter} onChange={(e)=>setTypeFilter(e.target.value)} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100">
+              {typeOptions.map(o=> <option key={o} value={o}>{o==='all'?'All': o==='Miscellaneous'?'Misc': o}</option>)}
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm text-gray-300 mb-2">Filter by Watch</label>
+            <select value={watchFilter} onChange={(e)=>setWatchFilter(e.target.value)} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100">
+              {watchOptions.map(o=> <option key={o} value={o}>{o==='all'?'All': `Watch ${o}`}</option>)}
+            </select>
+          </div>
+
+          <div className="flex-1 overflow-auto">
+            {loading ? (
+              <p className="text-gray-400 text-sm">Loading...</p>
+            ) : filtered.length===0 ? (
+              <p className="text-gray-400 text-sm">No events found</p>
+            ) : (
+              <div className="space-y-3">
+                {filtered.map(task=> (
+                  <div key={task.id} onClick={()=>{ setSelected(task); setEditOpen(false); }} className="p-3 bg-gray-900 border border-gray-700 rounded-lg hover:bg-gray-800 cursor-pointer">
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-indigo-300">#{task.refNumber}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full border ${task.type==='Faults'? 'bg-red-900 text-red-200 border-red-700' : task.type==='Maintenance' ? 'bg-blue-900 text-blue-200 border-blue-700' : 'bg-gray-700 text-gray-200 border-gray-600'}`}>{task.type}</span>
+                      </div>
+                      <div>{task.status==='Completed' ? <CheckCircle className="w-4 h-4 text-green-400"/> : <XCircle className="w-4 h-4 text-orange-400"/>}</div>
                     </div>
+                    <h3 className="text-sm font-medium text-gray-100">{task.taskName}</h3>
+                    <div className="text-xs text-gray-400 mt-1">Watch {task.watch} — {task.taskOwner}</div>
+                    <div className="text-xs text-gray-400">{new Date(task.dateTime).toLocaleString()}</div>
+                    {task.comments && <p className="text-xs text-gray-400 mt-2 line-clamp-2">{task.comments}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-                    {/* Watch Filter */}
-                    <div className="flex gap-2">
-                        {['all','A','B','C','D','E'].map(w => (
-                            <button
-                                key={w}
-                                onClick={() => setWatchFilter(w)}
-                                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                    watchFilter === w
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                                {w === 'all' ? 'All' : `Watch ${w}`}
-                            </button>
-                        ))}
-                    </div>
+          <div className="mt-4">
+            <button onClick={()=>{ setSelected(null); setEditOpen(false); }} className="w-full px-3 py-2 rounded-md bg-indigo-600 text-white">New Task</button>
+          </div>
+        </aside>
+
+        <main className="flex-1 p-8 overflow-auto">
+          {!selected ? (
+            <div className="max-w-3xl mx-auto bg-gray-800 border border-gray-700 rounded-xl p-8">
+              <h1 className="text-2xl font-bold mb-2">CTF 345 Shift Activity Tracker</h1>
+              <p className="text-gray-400 mb-6">Log faults, maintenance, and miscellaneous tasks</p>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Task Type *</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {['Faults','Maintenance','Miscellaneous'].map(t=> (
+                      <button key={t} onClick={()=>setFormData({...formData, type:t})} className={`p-3 rounded-lg border ${formData.type===t ? 'border-indigo-500 bg-indigo-600/10 text-indigo-200' : 'border-gray-700 text-gray-200'}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="p-4">
-                    {loading ? (
-                        <p className="text-gray-500 text-sm text-center py-8">Loading...</p>
-                    ) : filteredTasks.length === 0 ? (
-                        <p className="text-gray-500 text-sm text-center py-8">No events logged yet</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {filteredTasks.map(task => (
-                                <div
-                                    key={task.id}
-                                    onClick={() => { setSelectedTask(task); setEditMode(false); }}
-                                    className="p-3 border border-gray-200 rounded-lg hover:shadow-md transition-shadow bg-white cursor-pointer"
-                                >
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-mono font-semibold text-indigo-600">
-                                                #{task.refNumber}
-                                            </span>
-                                            <span className={`text-xs px-2 py-1 rounded-full border ${getTypeColor(task.type)}`}>
-                                                {task.type}
-                                            </span>
-                                        </div>
-                                        {task.status === 'Completed' ? (
-                                            <CheckCircle className="w-4 h-4 text-green-500" />
-                                        ) : (
-                                            <XCircle className="w-4 h-4 text-orange-500" />
-                                        )}
-                                    </div>
-
-                                    <h3 className="font-medium text-gray-900 text-sm mb-2">
-                                        {task.taskName}
-                                    </h3>
-
-                                    <div className="space-y-1 text-xs text-gray-600">
-                                        <div className="flex items-center gap-1">
-                                            <User className="w-3 h-3" />
-                                            <span>Watch {task.watch} - {task.taskOwner}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            <span>{new Date(task.dateTime).toLocaleString()}</span>
-                                        </div>
-                                    </div>
-
-                                    {task.comments && (
-                                        <p className="mt-2 text-xs text-gray-600 line-clamp-2">
-                                            {task.comments}
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Watch *</label>
+                    <select value={formData.watch} onChange={(e)=>setFormData({...formData, watch:e.target.value})} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100">
+                      {['A','B','C','D','E'].map(w=> <option key={w} value={w}>Watch {w}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Status *</label>
+                    <select value={formData.status} onChange={(e)=>setFormData({...formData, status:e.target.value})} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100">
+                      <option value="Ongoing">Ongoing</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Task Name *</label>
+                  <input type="text" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100" value={formData.taskName} onChange={e=>setFormData({...formData, taskName:e.target.value})} placeholder="Enter a brief task description" />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Task Owner *</label>
+                  <input type="text" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100" value={formData.taskOwner} onChange={e=>setFormData({...formData, taskOwner:e.target.value})} placeholder="Name of person logging this task" />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Date & Time *</label>
+                  <input type="datetime-local" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100" value={formData.dateTime} onChange={e=>setFormData({...formData, dateTime:e.target.value})} />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Comments *</label>
+                  <textarea rows="4" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100" value={formData.comments} onChange={e=>setFormData({...formData, comments:e.target.value})} placeholder="Provide detailed information about the task..." />
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={handleCreate} className="flex-1 bg-indigo-600 text-white py-3 rounded-lg">Log Task</button>
+                  <button onClick={()=>{ setFormData({ type:'Faults', watch:'A', taskName:'', taskOwner:'', status:'Ongoing', dateTime:new Date(new Date().getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16), comments:'' }); }} className="flex-1 border border-gray-700 py-3 rounded-lg">Reset</button>
+                </div>
+              </div>
             </div>
-
-            {/* Main Content */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="max-w-3xl mx-auto p-8">
-                    {/* Task Form / View */}
-                    {!selectedTask ? (
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">CTF 345 Shift Activity Tracker</h1>
-                            <p className="text-gray-600 mb-8">Log faults, maintenance, and miscellaneous tasks</p>
-
-                            <div className="space-y-6">
-                                {/* Type Selection */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Task Type *</label>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {['Faults','Maintenance','Miscellaneous'].map(type => (
-                                            <button
-                                                key={type}
-                                                onClick={() => setFormData({ ...formData, type })}
-                                                className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                                                    formData.type === type
-                                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                                                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                                                }`}
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Watch and Status */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Watch *</label>
-                                        <select
-                                            value={formData.watch}
-                                            onChange={(e) => setFormData({ ...formData, watch: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        >
-                                            {['A','B','C','D','E'].map(w => <option key={w} value={w}>Watch {w}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
-                                        <select
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        >
-                                            <option value="Ongoing">Ongoing</option>
-                                            <option value="Completed">Completed</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Task Name */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Task Name *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.taskName}
-                                        onChange={(e) => setFormData({ ...formData, taskName: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        placeholder="Enter a brief task description"
-                                    />
-                                </div>
-
-                                {/* Task Owner */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Task Owner *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.taskOwner}
-                                        onChange={(e) => setFormData({ ...formData, taskOwner: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        placeholder="Name of person logging this task"
-                                    />
-                                </div>
-
-                                {/* Date & Time */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Date & Time *</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={formData.dateTime}
-                                        onChange={(e) => setFormData({ ...formData, dateTime: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                {/* Comments */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Comments *</label>
-                                    <textarea
-                                        value={formData.comments}
-                                        onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                                        rows="4"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                                        placeholder="Provide detailed information about the task..."
-                                    />
-                                </div>
-
-                                {/* Submit Button */}
-                                <button
-                                    onClick={handleSubmit}
-                                    className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <Plus className="w-5 h-5" />
-                                    Log Task
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        // Task View / Edit
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-                            <div className="flex justify-between mb-4">
-                                <h1 className="text-2xl font-bold text-gray-900">Task #{selectedTask.refNumber}</h1>
-                                <button onClick={() => { setSelectedTask(null); setEditMode(false); }} className="text-gray-500 hover:text-gray-900">Close</button>
-                            </div>
-
-                            {editMode ? (
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Task Name</label>
-                                        <input
-                                            type="text"
-                                            value={selectedTask.taskName}
-                                            onChange={(e) => setSelectedTask({...selectedTask, taskName: e.target.value})}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Task Owner</label>
-                                        <input
-                                            type="text"
-                                            value={selectedTask.taskOwner}
-                                            onChange={(e) => setSelectedTask({...selectedTask, taskOwner: e.target.value})}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                        />
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <button onClick={handleUpdate} className="flex-1 bg-indigo-600 text-white py-3 rounded-lg">Save</button>
-                                        <button onClick={() => setEditMode(false)} className="flex-1 bg-gray-300 py-3 rounded-lg">Cancel</button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div>
-                                    <p className="text-gray-700 mb-2"><strong>Type:</strong> {selectedTask.type}</p>
-                                    <p className="text-gray-700 mb-2"><strong>Watch:</strong> {selectedTask.watch}</p>
-                                    <p className="text-gray-700 mb-2"><strong>Status:</strong> {selectedTask.status}</p>
-                                    <p className="text-gray-700 mb-2"><strong>Task Name:</strong> {selectedTask.taskName}</p>
-                                    <p className="text-gray-700 mb-2"><strong>Task Owner:</strong> {selectedTask.taskOwner}</p>
-                                    <p className="text-gray-700 mb-2"><strong>Date:</strong> {new Date(selectedTask.dateTime).toLocaleString()}</p>
-                                    <p className="text-gray-700 mb-4"><strong>Comments:</strong> {selectedTask.comments}</p>
-                                    <div className="flex gap-3">
-                                        <button onClick={() => setEditMode(true)} className="flex-1 bg-yellow-500 text-white py-3 rounded-lg">Edit</button>
-                                        <button onClick={() => handleDelete(selectedTask.id)} className="flex-1 bg-red-500 text-white py-3 rounded-lg">Delete</button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+          ) : (
+            <Drawer open={!!selected} onClose={()=>{ setSelected(null); setEditOpen(false); }}>
+              <div>
+                <div className="mb-4 flex items-start justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Task #{selected?.refNumber}</h2>
+                    <div className="text-sm text-gray-400">{selected?.type} — Watch {selected?.watch}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={()=>openEditModal(selected)} className="px-3 py-2 bg-yellow-500 text-white rounded-md">Edit</button>
+                    <button onClick={()=>{ if(confirm('Delete this task?')){ handleDelete(selected.id); }} className="px-3 py-2 bg-red-600 text-white rounded-md">Delete</button>
+                  </div>
                 </div>
+
+                <div className="space-y-3">
+                  <p><strong>Task Name:</strong> {selected?.taskName}</p>
+                  <p><strong>Owner:</strong> {selected?.taskOwner}</p>
+                  <p><strong>Status:</strong> {selected?.status}</p>
+                  <p><strong>Date & Time:</strong> {selected ? new Date(selected.dateTime).toLocaleString() : ''}</p>
+                  <div><strong>Comments:</strong><p className="whitespace-pre-wrap mt-2">{selected?.comments}</p></div>
+                </div>
+              </div>
+            </Drawer>
+          )}
+        </main>
+
+        <Modal open={editOpen} onClose={()=>setEditOpen(false)}>
+          {editForm && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Edit Task</h3>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Type</label>
+                <select value={editForm.type} onChange={e=>setEditForm({...editForm, type:e.target.value})} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100">
+                  <option>Faults</option>
+                  <option>Maintenance</option>
+                  <option>Miscellaneous</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Watch</label>
+                <select value={editForm.watch} onChange={e=>setEditForm({...editForm, watch:e.target.value})} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100">
+                  {['A','B','C','D','E'].map(w=> <option key={w} value={w}>Watch {w}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Status</label>
+                <select value={editForm.status} onChange={e=>setEditForm({...editForm, status:e.target.value})} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100">
+                  <option>Ongoing</option>
+                  <option>Completed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Task Name</label>
+                <input type="text" value={editForm.taskName} onChange={e=>setEditForm({...editForm, taskName:e.target.value})} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100" />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Task Owner</label>
+                <input type="text" value={editForm.taskOwner} onChange={e=>setEditForm({...editForm, taskOwner:e.target.value})} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100" />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Date & Time</label>
+                <input type="datetime-local" value={editForm.dateTime} onChange={e=>setEditForm({...editForm, dateTime:e.target.value})} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100" />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Comments</label>
+                <textarea rows="4" value={editForm.comments} onChange={e=>setEditForm({...editForm, comments:e.target.value})} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100" />
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={()=>handleUpdate(editForm)} className="flex-1 bg-indigo-600 text-white py-2 rounded-md">Save changes</button>
+                <button onClick={()=>setEditOpen(false)} className="flex-1 border border-gray-700 py-2 rounded-md">Cancel</button>
+                <button onClick={()=>{ if(confirm('Delete this task?')) handleDelete(editForm.id); }} className="flex-1 bg-red-600 text-white py-2 rounded-md">Delete</button>
+              </div>
             </div>
-        </div>
+          )}
+        </Modal>
+
+      </div>
     );
-}
+  }
 
-ReactDOM.render(<TaskTracker />, document.getElementById('root'));
-</script>
+  ReactDOM.render(<TaskTracker />, document.getElementById('root'));
+  </script>
 </body>
 </html>
